@@ -1,0 +1,68 @@
+# PlatformIO
+.pio/
+.pioenvs/
+.piolibdeps/
+.clang_complete
+.gcc-flags.json
+
+# VSCode
+.vscode/
+
+# Build artifacts
+*.o
+*.a
+*.bin
+*.elf
+*.map
+
+# Filesystem images
+littlefs.bin
+spiffs.bin
+
+# OS files
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+*~
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+venv/
+env/
+
+# Logs
+*.log
+logs/
+
+# Temporary files
+*.tmp
+*.temp
+*.bak
+*.backup
+
+# User data (no commitear imágenes de prueba)
+data/images/*.bmp
+data/images/*.rgb
+data/images/*.565
+!data/images/.gitkeep
+
+# Configuration files con datos sensibles
+config_local.json
+secrets.h
+
+# Documentation builds
+docs/_build/
+*.pdf
+
+# IDE specific
+.idea/
+*.sublime-*
+
+# Test coverage
+coverage/
+htmlcov/

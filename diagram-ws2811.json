@@ -1,0 +1,29 @@
+{
+  "version": 1,
+  "author": "darkjavi",
+  "editor": "wokwi",
+  "parts": [
+    {
+      "type": "wokwi-esp32-devkit-v1",
+      "id": "esp",
+      "top": 0,
+      "left": 0,
+      "attrs": {}
+    },
+    {
+      "type": "wokwi-neopixel",
+      "id": "led1",
+      "top": -48,
+      "left": 124.8,
+      "attrs": { "count": "144", "pin": "23" }
+    }
+  ],
+  "connections": [
+    [ "esp:TX0", "$serialMonitor:RX", "", [] ],
+    [ "esp:RX0", "$serialMonitor:TX", "", [] ],
+    [ "led1:DIN", "esp:D23", "green", [ "v0" ] ],
+    [ "led1:VCC", "esp:VIN", "red", [ "v0" ] ],
+    [ "led1:GND", "esp:GND.1", "black", [ "v0" ] ]
+  ],
+  "dependencies": {}
+}

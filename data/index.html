@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>POV Line Control</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>POV Line Control</h1>
+            <div class="status-bar">
+                <span id="wifi-status" class="status-badge">WiFi: <span id="wifi-ssid">-</span></span>
+                <span id="ip-address" class="status-badge">IP: <span id="ip">-</span></span>
+                <span id="free-space" class="status-badge">Espacio: <span id="space">-</span> KB</span>
+            </div>
+        </header>
+
+        <main>
+            <section class="card">
+                <h2>Control POV</h2>
+                <div class="control-panel">
+                    <div class="button-group">
+                        <button id="btn-play" class="btn btn-primary" onclick="playPOV()">▶ Play</button>
+                        <button id="btn-pause" class="btn btn-secondary" onclick="pausePOV()">⏸ Pause</button>
+                        <button id="btn-stop" class="btn btn-danger" onclick="stopPOV()">⏹ Stop</button>
+                    </div>
+
+                    <div class="control-group">
+                        <label for="speed-slider">Velocidad (FPS): <span id="speed-value">30</span></label>
+                        <input type="range" id="speed-slider" min="1" max="120" value="30" onchange="updateSpeed(this.value)">
+                    </div>
+
+                    <div class="control-group">
+                        <label for="brightness-slider">Brillo: <span id="brightness-value">128</span></label>
+                        <input type="range" id="brightness-slider" min="0" max="255" value="128" onchange="updateBrightness(this.value)">
+                    </div>
+
+                    <div class="control-group">
+                        <label for="loop-checkbox">
+                            <input type="checkbox" id="loop-checkbox" onchange="updateLoop(this.checked)"> Modo Loop
+                        </label>
+                    </div>
+
+                    <div class="control-group">
+                        <label for="orientation-select">Orientación:</label>
+                        <select id="orientation-select" onchange="updateOrientation(this.value)">
+                            <option value="vertical">Vertical</option>
+                            <option value="horizontal">Horizontal</option>
+                        </select>
+                    </div>
+
+                    <div class="status-info">
+                        <p>Estado: <strong id="pov-state">Idle</strong></p>
+                        <p>Imagen actual: <strong id="current-image">Ninguna</strong></p>
+                        <p>Progreso: <span id="current-column">0</span> / <span id="total-columns">0</span></p>
+                    </div>
+                </div>
+            </section>
+
+            <section class="card">
+                <h2>Galería de Imágenes</h2>
+                <div id="images-list" class="images-grid">
+                    <p class="loading">Cargando imágenes...</p>
+                </div>
+            </section>
+
+            <section class="card">
+                <h2>Subir Imagen</h2>
+                <div class="upload-zone" id="upload-zone" ondrop="handleDrop(event)" ondragover="handleDragOver(event)">
+                    <p>Arrastra una imagen aquí o haz clic para seleccionar</p>
+                    <input type="file" id="file-input" accept=".bmp,.rgb,.565" onchange="handleFileSelect(event)">
+                    <button class="btn btn-secondary" onclick="document.getElementById('file-input').click()">Seleccionar Archivo</button>
+                </div>
+                <div id="upload-progress" class="upload-progress" style="display:none;">
+                    <div class="progress-bar">
+                        <div id="progress-fill" class="progress-fill"></div>
+                    </div>
+                    <p id="upload-status">Subiendo...</p>
+                </div>
+                <div class="format-info">
+                    <h3>Formatos Soportados:</h3>
+                    <ul>
+                        <li><strong>BMP</strong> (24-bit sin comprimir)</li>
+                        <li><strong>RGB565 Raw</strong> (.rgb, .565)</li>
+                    </ul>
+                    <h3>Limitaciones:</h3>
+                    <ul>
+                        <li>Altura: Igual al número de LEDs configurados</li>
+                        <li>Ancho máximo: 128 píxeles</li>
+                        <li>Tamaño máximo archivo: 100 KB</li>
+                    </ul>
+                    <h3>Recomendaciones:</h3>
+                    <ul>
+                        <li>Usar imágenes con buen contraste</li>
+                        <li>Evitar detalles muy finos</li>
+                        <li>Probar diferentes velocidades para mejor efecto</li>
+                    </ul>
+                </div>
+            </section>
+
+            <section class="card">
+                <h2>Efectos</h2>
+                <div class="effects-panel">
+                    <button class="btn btn-effect" onclick="setEffect('rainbow')">🌈 Rainbow</button>
+                    <button class="btn btn-effect" onclick="setEffect('solid')">💡 Color Sólido</button>
+                    <button class="btn btn-effect" onclick="setEffect('chase')">⚡ Chase</button>
+                    <button class="btn btn-danger" onclick="setEffect('off')">⏹ Apagar</button>
+                </div>
+                <div class="color-picker-container" id="color-picker-container" style="display:none;">
+                    <label for="color-picker">Seleccionar Color:</label>
+                    <input type="color" id="color-picker" value="#ff0000">
+                </div>
+            </section>
+
+            <section class="card">
+                <h2>Configuración</h2>
+                <div class="config-panel">
+                    <div class="control-group">
+                        <label for="device-name">Nombre del Dispositivo:</label>
+                        <input type="text" id="device-name" placeholder="POV-Line">
+                    </div>
+                    <div class="control-group">
+                        <label for="num-leds">Número de LEDs:</label>
+                        <input type="number" id="num-leds" min="1" max="300" value="144">
+                    </div>
+                    <h3>WiFi</h3>
+                    <div class="control-group">
+                        <label for="wifi-ssid-input">SSID:</label>
+                        <input type="text" id="wifi-ssid-input" placeholder="Mi WiFi">
+                    </div>
+                    <div class="control-group">
+                        <label for="wifi-pass">Password:</label>
+                        <input type="password" id="wifi-pass" placeholder="********">
+                    </div>
+                    <h3>MQTT (Home Assistant)</h3>
+                    <div class="control-group">
+                        <label for="mqtt-enabled">
+                            <input type="checkbox" id="mqtt-enabled"> Habilitar MQTT
+                        </label>
+                    </div>
+                    <div class="control-group">
+                        <label for="mqtt-broker">Broker:</label>
+                        <input type="text" id="mqtt-broker" placeholder="192.168.1.100">
+                    </div>
+                    <div class="control-group">
+                        <label for="mqtt-port">Puerto:</label>
+                        <input type="number" id="mqtt-port" value="1883">
+                    </div>
+                    <button class="btn btn-primary" onclick="saveConfig()">Guardar Configuración</button>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>
