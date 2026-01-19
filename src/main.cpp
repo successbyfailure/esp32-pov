@@ -27,7 +27,7 @@ Config config;
 // Variables para BornHack Badge
 #ifdef BORNHACK_BADGE
 int currentEffectIndex = 0;
-const int NUM_EFFECTS = 4;
+const int NUM_EFFECTS = 5;
 unsigned long lastMotionCheck = 0;
 bool motionDetected = false;
 int8_t lastDirectionSign = 1;  // 1: izquierda->derecha (default), -1: derecha->izquierda
@@ -293,8 +293,12 @@ void loop() {
         effects.colorChase(CRGB::Red, 50);
         Serial.println("Efecto 2: Chase rojo");
         break;
-      case 3:  // POV (solo si hay movimiento)
-        Serial.println("Efecto 3: POV mode");
+      case 3:  // Acelerómetro: dirección + intensidad
+        effects.accelDirection(20);
+        Serial.println("Efecto 3: Accel direction");
+        break;
+      case 4:  // POV (solo si hay movimiento)
+        Serial.println("Efecto 4: POV mode");
         // Se activa automáticamente con movimiento más abajo
         break;
     }
@@ -313,7 +317,7 @@ void loop() {
 #endif
 
   // Si está en modo POV (efecto 3) y hay movimiento, activar POV
-  if (currentEffectIndex == 3) {
+  if (currentEffectIndex == 4) {
 #ifdef HAS_ACCELEROMETER
     // Detectar dirección del movimiento para ajustar el orden de columnas
     int8_t dir = accelerometer.getSweepDirection();

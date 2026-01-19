@@ -160,7 +160,8 @@ enum EffectType {
   EFFECT_RAINBOW,
   EFFECT_SOLID_COLOR,
   EFFECT_COLOR_CHASE,
-  EFFECT_FADE
+  EFFECT_FADE,
+  EFFECT_ACCEL_DIRECTION
 };
 
 // Funciones de configuración global (definidas en main.cpp)

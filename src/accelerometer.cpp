@@ -1,4 +1,5 @@
 #include "accelerometer.h"
+#include <math.h>
 
 Accelerometer::Accelerometer() {
 #ifdef HAS_ACCELEROMETER
@@ -85,9 +86,9 @@ void Accelerometer::update() {
   float deltaY = abs(y - lastY);
   float deltaZ = abs(z - lastZ);
 
-  // Acumular dirección en eje X (badge se mueve lateralmente)
-  float signedDeltaX = x - lastX;
-  dirAccumX = (dirAccumX * 0.8f) + (signedDeltaX * 0.2f);  // suavizado exponencial
+  // Acumular dirección en eje Y (izquierda/derecha según serigrafía del badge)
+  float signedDeltaY = y - lastY;
+  dirAccumX = (dirAccumX * 0.8f) + (signedDeltaY * 0.2f);  // suavizado exponencial
 
   float totalDelta = sqrt(deltaX*deltaX + deltaY*deltaY + deltaZ*deltaZ);
 
@@ -144,11 +145,20 @@ int8_t Accelerometer::getSweepDirection() {
   if (!initialized) return 0;
 
   const float dirThreshold = 0.1f;  // m/s² equivalente tras suavizado
-  if (dirAccumX > dirThreshold) return 1;   // Movimiento positivo (ej. derecha)
-  if (dirAccumX < -dirThreshold) return -1; // Movimiento negativo (ej. izquierda)
+  if (dirAccumX > dirThreshold) return -1;   // Y positivo: izquierda
+  if (dirAccumX < -dirThreshold) return 1;   // Y negativo: derecha
   return 0;
 #else
   return 0;
+#endif
+}
+
+float Accelerometer::getDirectionStrength() {
+#ifdef HAS_ACCELEROMETER
+  if (!initialized) return 0.0f;
+  return fabsf(dirAccumX);
+#else
+  return 0.0f;
 #endif
 }
 
