@@ -98,25 +98,28 @@ bool ImageParser::getColumn(const char* filename, uint16_t columnIndex, CRGB* bu
     return false;
   }
 
-  if (columnIndex >= info.width) {
-    return false;
-  }
-
   File file = LittleFS.open(filename, "r");
   if (!file) {
     return false;
   }
 
-  bool result = false;
-
-  if (info.format == 0) {
-    result = getColumnBMP(file, info, columnIndex, buffer, bufferSize);
-  } else if (info.format == 1) {
-    result = getColumnRGB565(file, info, columnIndex, buffer, bufferSize);
-  }
-
+  bool result = getColumn(file, info, columnIndex, buffer, bufferSize);
   file.close();
   return result;
+}
+
+bool ImageParser::getColumn(File& file, const ImageInfo& info, uint16_t columnIndex, CRGB* buffer, uint16_t bufferSize) {
+  if (columnIndex >= info.width) {
+    return false;
+  }
+
+  if (info.format == 0) {
+    return getColumnBMP(file, info, columnIndex, buffer, bufferSize);
+  } else if (info.format == 1) {
+    return getColumnRGB565(file, info, columnIndex, buffer, bufferSize);
+  }
+  
+  return false;
 }
 
 bool ImageParser::getColumnBMP(File& file, const ImageInfo& info, uint16_t columnIndex, CRGB* buffer, uint16_t bufferSize) {

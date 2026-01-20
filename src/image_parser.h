@@ -50,6 +50,7 @@ public:
   bool parseRGB565(File& file, ImageInfo& info);
 
   bool getColumn(const char* filename, uint16_t columnIndex, CRGB* buffer, uint16_t bufferSize);
+  bool getColumn(File& file, const ImageInfo& info, uint16_t columnIndex, CRGB* buffer, uint16_t bufferSize);
   bool getColumnBMP(File& file, const ImageInfo& info, uint16_t columnIndex, CRGB* buffer, uint16_t bufferSize);
   bool getColumnRGB565(File& file, const ImageInfo& info, uint16_t columnIndex, CRGB* buffer, uint16_t bufferSize);
 

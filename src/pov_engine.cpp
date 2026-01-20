@@ -250,10 +250,18 @@ void POVEngine::displayColumn(uint16_t column) {
     displayCol = maxColumns - 1 - column;
   }
 
+  // Abrir archivo una sola vez para toda la columna/fila
+  File file = LittleFS.open(currentImageFile, "r");
+  if (!file) {
+    Serial.printf("Error: No se pudo abrir %s para visualización\n", currentImageFile);
+    return;
+  }
+
   if (orientation == POV_VERTICAL) {
     // Modo vertical: leer columna vertical de la imagen
-    if (!imageParser.getColumn(currentImageFile, displayCol, columnBuffer, MAX_LEDS)) {
+    if (!imageParser.getColumn(file, currentImage, displayCol, columnBuffer, MAX_LEDS)) {
       Serial.printf("Error: No se pudo leer columna %d\n", displayCol);
+      file.close();
       return;
     }
 
@@ -277,11 +285,14 @@ void POVEngine::displayColumn(uint16_t column) {
     uint16_t rowIndex = column;
     uint16_t displayWidth = numLeds;
 
+    // Buffer temporal
+    CRGB tempBuffer[MAX_LEDS];
+
     // Leer píxeles de la fila horizontal, escalando si es necesario
     for (uint16_t x = 0; x < displayWidth; x++) {
       // Para leer una fila horizontal, leemos el píxel en (x, rowIndex)
       // Necesitamos leer la columna X y tomar el píxel en la posición rowIndex
-      CRGB tempBuffer[MAX_LEDS];
+      
       // Calcular columna origen (posible escalado si hay más LEDs que ancho)
       uint16_t srcX;
       if (currentImage.width <= 1) {
@@ -292,7 +303,8 @@ void POVEngine::displayColumn(uint16_t column) {
         srcX = (uint32_t)x * (currentImage.width - 1) / (displayWidth - 1);
       }
 
-      if (!imageParser.getColumn(currentImageFile, srcX, tempBuffer, MAX_LEDS)) {
+      // Usamos la versión optimizada que recibe el archivo abierto
+      if (!imageParser.getColumn(file, currentImage, srcX, tempBuffer, MAX_LEDS)) {
         ledController.setPixel(x, CRGB::Black);
         continue;
       }
@@ -311,6 +323,7 @@ void POVEngine::displayColumn(uint16_t column) {
     }
   }
 
+  file.close();
   ledController.show();
 }
 
