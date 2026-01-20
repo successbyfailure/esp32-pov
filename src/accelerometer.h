@@ -21,6 +21,7 @@ private:
   bool isMoving;
   float motionThreshold;
   float dirAccumX;
+  float motionLevel;
 
   // Calibración
   float offsetX, offsetY, offsetZ;
@@ -39,7 +40,6 @@ public:
   bool isStill();
   float getMotionMagnitude();
   int8_t getSweepDirection();  // -1: negativo, 1: positivo, 0: indeterminado
-  float getDirectionStrength();
 
   // Calibración
   void calibrate();

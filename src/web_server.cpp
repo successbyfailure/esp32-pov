@@ -110,6 +110,8 @@ void WebServer::handlePlay(AsyncWebServerRequest *request) {
   String imageName = request->getParam("image", true)->value();
 
   if (povEngine.loadImage(imageName.c_str())) {
+    // Asegurar que no quede ningún efecto activo solapando
+    effects.stop();
     povEngine.play();
     request->send(200, "application/json", "{\"success\":true}");
   } else {
@@ -224,9 +226,6 @@ void WebServer::handleEffect(AsyncWebServerRequest *request) {
     uint8_t b = request->hasParam("b", true) ? request->getParam("b", true)->value().toInt() : 0;
     uint8_t speed = request->hasParam("speed", true) ? request->getParam("speed", true)->value().toInt() : 50;
     effects.colorChase(CRGB(r, g, b), speed);
-  } else if (effectName == "accel") {
-    uint8_t interval = request->hasParam("speed", true) ? request->getParam("speed", true)->value().toInt() : 20;
-    effects.accelDirection(interval);
   } else if (effectName == "off") {
     effects.stop();
   } else {
@@ -469,7 +468,6 @@ String WebServer::getEffectsJSON() {
   effectsArray.add("rainbow");
   effectsArray.add("solid");
   effectsArray.add("chase");
-  effectsArray.add("accel");
   effectsArray.add("off");
 
   String json;

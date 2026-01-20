@@ -29,13 +29,11 @@ public:
   void solidColor(uint8_t r, uint8_t g, uint8_t b);
   void colorChase(CRGB color, uint8_t speed = 50);
   void fade(CRGB fromColor, CRGB toColor, uint16_t duration = 2000);
-  void accelDirection(uint8_t updateInterval = 20);
 
 private:
   void updateRainbow();
   void updateColorChase();
   void updateFade();
-  void updateAccelDirection();
 };
 
 extern Effects effects;

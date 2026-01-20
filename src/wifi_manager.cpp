@@ -4,7 +4,12 @@ WiFiManager::WiFiManager() : apMode(false), connected(false), lastConnectionAtte
 }
 
 void WiFiManager::init() {
+  // Desactivar WiFi inicialmente
+#if defined(ESP8266) || defined(ARDUINO_ARCH_ESP8266)
+  WiFi.mode(WIFI_OFF);
+#else
   WiFi.mode(WIFI_MODE_NULL);
+#endif
   Serial.println("WiFi Manager inicializado");
 }
 

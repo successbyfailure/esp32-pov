@@ -1,7 +1,12 @@
 #include <Arduino.h>
+#include <FS.h>
 #include <LittleFS.h>
 #include <ArduinoJson.h>
-#include <ESPmDNS.h>
+#if defined(ESP8266) || defined(ARDUINO_ARCH_ESP8266)
+  #include <ESP8266mDNS.h>
+#else
+  #include <ESPmDNS.h>
+#endif
 #include "config.h"
 #include "led_controller.h"
 #include "pov_engine.h"
@@ -21,6 +26,18 @@
 #include "button.h"
 #endif
 
+// Botones adicionales opcionales
+#ifdef UP_BUTTON_PIN
+  #ifndef BUTTON_PIN
+    #include "button.h"
+  #endif
+#endif
+
+#ifdef DOWN_BUTTON_PIN
+  #ifndef BUTTON_PIN
+    #include "button.h"
+  #endif
+#endif
 // Configuración global
 Config config;
 
@@ -106,6 +123,24 @@ void setup() {
 
   // 1. Inicializar LittleFS
   Serial.println("[1/7] Inicializando sistema de archivos...");
+#if defined(ESP8266) || defined(ARDUINO_ARCH_ESP8266)
+  if (!LittleFS.begin()) {
+    Serial.println("ERROR: No se pudo inicializar LittleFS");
+    Serial.println("Sistema detenido");
+    while (1) {
+      delay(1000);
+    }
+  }
+  FSInfo fsInfo;
+  if (LittleFS.info(fsInfo)) {
+    Serial.printf("LittleFS OK - Total: %d KB, Usado: %d KB, Libre: %d KB\n",
+                  fsInfo.totalBytes / 1024,
+                  fsInfo.usedBytes / 1024,
+                  (fsInfo.totalBytes - fsInfo.usedBytes) / 1024);
+  } else {
+    Serial.println("LittleFS OK");
+  }
+#else
   if (!LittleFS.begin(true)) {
     Serial.println("ERROR: No se pudo inicializar LittleFS");
     Serial.println("Sistema detenido");
@@ -117,6 +152,7 @@ void setup() {
                 LittleFS.totalBytes() / 1024,
                 LittleFS.usedBytes() / 1024,
                 (LittleFS.totalBytes() - LittleFS.usedBytes()) / 1024);
+#endif
 
   // 2. Cargar configuración
   Serial.println("\n[2/7] Cargando configuración...");
@@ -161,6 +197,16 @@ void setup() {
   Serial.println("Botón listo - presionar para cambiar efectos");
 #endif
 
+#ifdef UP_BUTTON_PIN
+  Serial.println("\n[3d] Inicializando botón UP...");
+  buttonUp.init(UP_BUTTON_PIN);
+#endif
+
+#ifdef DOWN_BUTTON_PIN
+  Serial.println("\n[3e] Inicializando botón DOWN...");
+  buttonDown.init(DOWN_BUTTON_PIN);
+#endif
+
   // 4. Inicializar gestor de imágenes
   Serial.println("\n[4/7] Inicializando gestor de imágenes...");
   if (!imageManager.init()) {
@@ -197,12 +243,14 @@ void setup() {
       wifiManager.startAP();
       Serial.printf("Modo AP activo. IP: %s\n", wifiManager.getIP().c_str());
       startMDNS("pov-line");
+      otaManager.begin("pov-line");
     }
   } else {
     Serial.println("WiFi no configurado. Iniciando modo AP...");
     wifiManager.startAP();
     Serial.printf("Modo AP activo. IP: %s\n", wifiManager.getIP().c_str());
     startMDNS("pov-line");
+    otaManager.begin("pov-line");
   }
 
   // 6. Inicializar servidor web
@@ -225,10 +273,13 @@ void setup() {
   povEngine.setOrientation(config.povOrientation);
 
   // Cargar imagen activa si existe
+  bool povStarted = false;
   if (strlen(config.activeImage) > 0) {
     Serial.printf("\nCargando imagen activa: %s\n", config.activeImage);
     if (povEngine.loadImage(config.activeImage)) {
       Serial.println("Imagen activa cargada correctamente");
+      povEngine.play();
+      povStarted = true;
     }
   }
 
@@ -236,8 +287,10 @@ void setup() {
   Serial.println("Sistema iniciado correctamente");
   Serial.println("========================================\n");
 
-  // Efecto inicial: Rainbow
-  effects.rainbow(15);
+  // Efecto inicial: POV si hay imagen cargada; de lo contrario, dejar efectos apagados
+  if (!povStarted) {
+    effects.stop();
+  }
 }
 
 void loop() {
@@ -293,13 +346,13 @@ void loop() {
         effects.colorChase(CRGB::Red, 50);
         Serial.println("Efecto 2: Chase rojo");
         break;
-      case 3:  // Acelerómetro: dirección + intensidad
-        effects.accelDirection(20);
-        Serial.println("Efecto 3: Accel direction");
-        break;
-      case 4:  // POV (solo si hay movimiento)
-        Serial.println("Efecto 4: POV mode");
+      case 3:  // POV (solo si hay movimiento)
+        Serial.println("Efecto 3: POV mode");
         // Se activa automáticamente con movimiento más abajo
+        break;
+      case 4:  // Dirección con color
+        Serial.println("Efecto 4: Dirección (verde->, rojo<-)");
+        // Se actualiza en el loop según el sentido detectado
         break;
     }
 
@@ -316,8 +369,31 @@ void loop() {
   }
 #endif
 
+  // Ajuste de brillo con botones UP/DOWN
+  const uint8_t brightnessStep = 8;
+#ifdef UP_BUTTON_PIN
+  buttonUp.update();
+  if (buttonUp.wasPressed()) {
+    uint8_t newB = constrain((int)config.brightness + brightnessStep, 1, 255);
+    config.brightness = newB;
+    ledController.setBrightness(newB);
+    ledController.show();
+    Serial.printf("Brillo aumentado a %u\n", newB);
+  }
+#endif
+#ifdef DOWN_BUTTON_PIN
+  buttonDown.update();
+  if (buttonDown.wasPressed()) {
+    uint8_t newB = constrain((int)config.brightness - brightnessStep, 1, 255);
+    config.brightness = newB;
+    ledController.setBrightness(newB);
+    ledController.show();
+    Serial.printf("Brillo reducido a %u\n", newB);
+  }
+#endif
+
   // Si está en modo POV (efecto 3) y hay movimiento, activar POV
-  if (currentEffectIndex == 4) {
+  if (currentEffectIndex == 3) {
 #ifdef HAS_ACCELEROMETER
     // Detectar dirección del movimiento para ajustar el orden de columnas
     int8_t dir = accelerometer.getSweepDirection();
@@ -342,6 +418,32 @@ void loop() {
       // Asegurar LEDs apagados cuando está quieto
       ledController.clear();
       ledController.show();
+    }
+#endif
+  }
+  else if (currentEffectIndex == 4) {
+#ifdef HAS_ACCELEROMETER
+    // Mostrar color según dirección con brillo proporcional a movimiento; apagado en reposo
+    int8_t dir = accelerometer.getSweepDirection();
+    float motion = accelerometer.getMotionMagnitude(); // delta de aceleración
+    const float maxMotion = 1.0f; // m/s² para brillo máximo
+    float scale = motion / maxMotion;
+    if (scale < 0.05f) {
+      ledController.clear();
+      ledController.show();
+    } else {
+      scale = constrain(scale, 0.0f, 1.0f);
+      uint8_t dynBrightness = constrain((int)(config.brightness * scale), 1, 255);
+      ledController.setBrightness(dynBrightness);
+
+      CRGB color = CRGB::Yellow;
+      if (dir > 0) color = CRGB::Green;
+      else if (dir < 0) color = CRGB::Red;
+      ledController.fill(color);
+      ledController.show();
+
+      // Restaurar brillo base para otros efectos
+      ledController.setBrightness(config.brightness);
     }
 #endif
   }

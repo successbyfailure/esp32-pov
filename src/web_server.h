@@ -3,7 +3,11 @@
 
 #include <Arduino.h>
 #include <ESPAsyncWebServer.h>
-#include <AsyncTCP.h>
+#if defined(ESP8266) || defined(ARDUINO_ARCH_ESP8266)
+  #include <ESPAsyncTCP.h>
+#else
+  #include <AsyncTCP.h>
+#endif
 #include <LittleFS.h>
 #include <ArduinoJson.h>
 #include "config.h"

@@ -257,29 +257,42 @@ void POVEngine::displayColumn(uint16_t column) {
       return;
     }
 
-    // Mostrar en LEDs verticalmente
-    uint16_t displayHeight = min(numLeds, (uint16_t)currentImage.height);
-
-    for (uint16_t i = 0; i < displayHeight; i++) {
-      ledController.setPixel(i, columnBuffer[i]);
-    }
-
-    // Apagar LEDs restantes
-    for (uint16_t i = displayHeight; i < numLeds; i++) {
-      ledController.setPixel(i, CRGB::Black);
+    // Mostrar en LEDs verticalmente, escalando si hay más LEDs que alto de imagen
+    for (uint16_t i = 0; i < numLeds; i++) {
+      uint16_t srcIndex;
+      if (currentImage.height <= 1) {
+        srcIndex = 0;
+      } else if (numLeds <= currentImage.height) {
+        srcIndex = i;  // cabe sin escalar
+      } else {
+        // Escalado lineal: mapear 0..numLeds-1 a 0..height-1
+        srcIndex = (uint32_t)i * (currentImage.height - 1) / (numLeds - 1);
+      }
+      srcIndex = min(srcIndex, (uint16_t)(MAX_LEDS - 1));
+      ledController.setPixel(i, columnBuffer[srcIndex]);
     }
   } else {
     // Modo horizontal: leer fila horizontal de la imagen
     // La "columna" actual es realmente el índice de fila (Y)
     uint16_t rowIndex = column;
-    uint16_t displayWidth = min(numLeds, (uint16_t)currentImage.width);
+    uint16_t displayWidth = numLeds;
 
-    // Leer píxeles de la fila horizontal
+    // Leer píxeles de la fila horizontal, escalando si es necesario
     for (uint16_t x = 0; x < displayWidth; x++) {
       // Para leer una fila horizontal, leemos el píxel en (x, rowIndex)
       // Necesitamos leer la columna X y tomar el píxel en la posición rowIndex
       CRGB tempBuffer[MAX_LEDS];
-      if (!imageParser.getColumn(currentImageFile, x, tempBuffer, MAX_LEDS)) {
+      // Calcular columna origen (posible escalado si hay más LEDs que ancho)
+      uint16_t srcX;
+      if (currentImage.width <= 1) {
+        srcX = 0;
+      } else if (displayWidth <= currentImage.width) {
+        srcX = x;
+      } else {
+        srcX = (uint32_t)x * (currentImage.width - 1) / (displayWidth - 1);
+      }
+
+      if (!imageParser.getColumn(currentImageFile, srcX, tempBuffer, MAX_LEDS)) {
         ledController.setPixel(x, CRGB::Black);
         continue;
       }

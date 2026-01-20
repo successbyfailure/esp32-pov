@@ -1,7 +1,4 @@
 #include "effects.h"
-#ifdef HAS_ACCELEROMETER
-#include "accelerometer.h"
-#endif
 
 Effects::Effects() : currentEffect(EFFECT_NONE), lastUpdate(0), effectSpeed(10),
                      effectColor(CRGB::Black), effectState(0), running(false) {
@@ -21,9 +18,6 @@ void Effects::update() {
       break;
     case EFFECT_FADE:
       updateFade();
-      break;
-    case EFFECT_ACCEL_DIRECTION:
-      updateAccelDirection();
       break;
     case EFFECT_SOLID_COLOR:
       // No requiere actualización continua
@@ -93,13 +87,6 @@ void Effects::fade(CRGB fromColor, CRGB toColor, uint16_t duration) {
   delay(duration / 2);
 }
 
-void Effects::accelDirection(uint8_t updateInterval) {
-  currentEffect = EFFECT_ACCEL_DIRECTION;
-  effectSpeed = updateInterval;
-  running = true;
-  lastUpdate = 0;
-}
-
 void Effects::updateRainbow() {
   unsigned long currentTime = millis();
   if (currentTime - lastUpdate < (100 / effectSpeed)) {
@@ -143,38 +130,6 @@ void Effects::updateColorChase() {
 void Effects::updateFade() {
   // Fade ya se ejecuta de una vez en la función fade()
   // Esta función está para compatibilidad
-}
-
-void Effects::updateAccelDirection() {
-  unsigned long currentTime = millis();
-  if (currentTime - lastUpdate < effectSpeed) {
-    return;
-  }
-
-#ifdef HAS_ACCELEROMETER
-  accelerometer.update();
-
-  int8_t dir = accelerometer.getSweepDirection();
-  float strength = accelerometer.getDirectionStrength();
-
-  const float maxStrength = 1.2f;
-  uint8_t intensity = (uint8_t)constrain((strength / maxStrength) * 255.0f, 0.0f, 255.0f);
-
-  CRGB color = CRGB::Black;
-  if (dir < 0) {
-    color = CRGB(0, intensity, 0);
-  } else if (dir > 0) {
-    color = CRGB(intensity, 0, 0);
-  }
-
-  ledController.fill(color);
-  ledController.show();
-#else
-  ledController.clear();
-  ledController.show();
-#endif
-
-  lastUpdate = currentTime;
 }
 
 // Instancia global

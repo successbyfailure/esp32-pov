@@ -1,6 +1,6 @@
 #include "button.h"
 
-#ifdef BUTTON_PIN
+#if defined(BUTTON_PIN) || defined(UP_BUTTON_PIN) || defined(DOWN_BUTTON_PIN)
 
 Button::Button() {
   pin = BUTTON_PIN;
@@ -94,6 +94,16 @@ void Button::setLongPressThreshold(unsigned long ms) {
 }
 
 // Instancia global
+#ifdef BUTTON_PIN
 Button button;
+#endif
 
-#endif // BUTTON_PIN
+#ifdef UP_BUTTON_PIN
+Button buttonUp;
+#endif
+
+#ifdef DOWN_BUTTON_PIN
+Button buttonDown;
+#endif
+
+#endif // any button pin

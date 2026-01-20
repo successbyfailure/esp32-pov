@@ -1,5 +1,4 @@
 #include "accelerometer.h"
-#include <math.h>
 
 Accelerometer::Accelerometer() {
 #ifdef HAS_ACCELEROMETER
@@ -9,6 +8,7 @@ Accelerometer::Accelerometer() {
   motionThreshold = 0.35; // m/s² - umbral de movimiento (más alto para evitar falsos positivos)
   lastX = lastY = lastZ = 0;
   dirAccumX = 0;
+  motionLevel = 0;
   offsetX = offsetY = offsetZ = 0;
   calibrated = false;
   lastMotionTime = 0;
@@ -86,11 +86,12 @@ void Accelerometer::update() {
   float deltaY = abs(y - lastY);
   float deltaZ = abs(z - lastZ);
 
-  // Acumular dirección en eje Y (izquierda/derecha según serigrafía del badge)
-  float signedDeltaY = y - lastY;
-  dirAccumX = (dirAccumX * 0.8f) + (signedDeltaY * 0.2f);  // suavizado exponencial
+  // Acumular dirección en eje X (badge se mueve lateralmente)
+  float signedDeltaX = x - lastX;
+  dirAccumX = (dirAccumX * 0.8f) + (signedDeltaX * 0.2f);  // suavizado exponencial
 
   float totalDelta = sqrt(deltaX*deltaX + deltaY*deltaY + deltaZ*deltaZ);
+  motionLevel = totalDelta;
 
   // Detectar movimiento
   if (totalDelta > motionThreshold) {
@@ -129,12 +130,7 @@ bool Accelerometer::isStill() {
 float Accelerometer::getMotionMagnitude() {
 #ifdef HAS_ACCELEROMETER
   if (!initialized) return 0;
-
-  float deltaX = abs(lastX);
-  float deltaY = abs(lastY);
-  float deltaZ = abs(lastZ);
-
-  return sqrt(deltaX*deltaX + deltaY*deltaY + deltaZ*deltaZ);
+  return motionLevel;
 #else
   return 0;
 #endif
@@ -145,20 +141,11 @@ int8_t Accelerometer::getSweepDirection() {
   if (!initialized) return 0;
 
   const float dirThreshold = 0.1f;  // m/s² equivalente tras suavizado
-  if (dirAccumX > dirThreshold) return -1;   // Y positivo: izquierda
-  if (dirAccumX < -dirThreshold) return 1;   // Y negativo: derecha
+  if (dirAccumX > dirThreshold) return 1;   // Movimiento positivo (ej. derecha)
+  if (dirAccumX < -dirThreshold) return -1; // Movimiento negativo (ej. izquierda)
   return 0;
 #else
   return 0;
-#endif
-}
-
-float Accelerometer::getDirectionStrength() {
-#ifdef HAS_ACCELEROMETER
-  if (!initialized) return 0.0f;
-  return fabsf(dirAccumX);
-#else
-  return 0.0f;
 #endif
 }
 

@@ -6,7 +6,11 @@
 extern Config config;
 
 HAIntegration::HAIntegration() : mqttClient(nullptr), initialized(false), connected(false), lastReconnectAttempt(0) {
+#if defined(ESP8266) || defined(ARDUINO_ARCH_ESP8266)
+  sprintf(mqttClientId, "pov_line_%06X", ESP.getChipId());
+#else
   sprintf(mqttClientId, "pov_line_%08X", (uint32_t)ESP.getEfuseMac());
+#endif
 }
 
 HAIntegration::~HAIntegration() {
@@ -140,8 +144,6 @@ void HAIntegration::handleEffectCommand(const char* payload) {
     effects.solidColor(255, 255, 255);
   } else if (effect == "chase") {
     effects.colorChase(CRGB(255, 0, 0), 50);
-  } else if (effect == "accel") {
-    effects.accelDirection(20);
   }
 }
 
@@ -173,9 +175,6 @@ void HAIntegration::publishState() {
         break;
       case EFFECT_COLOR_CHASE:
         currentEffect = "Chase";
-        break;
-      case EFFECT_ACCEL_DIRECTION:
-        currentEffect = "Accel";
         break;
       default:
         currentEffect = "None";
@@ -209,7 +208,6 @@ void HAIntegration::publishDiscovery() {
   effectList.add("Rainbow");
   effectList.add("Solid Color");
   effectList.add("Chase");
-  effectList.add("Accel");
 
   JsonObject device = doc["device"].to<JsonObject>();
   device["identifiers"][0] = mqttClientId;

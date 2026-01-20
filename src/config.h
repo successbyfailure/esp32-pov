@@ -35,7 +35,7 @@ enum LEDStripType {
 #endif
 
 #define MIN_LEDS 1
-#define DEFAULT_BRIGHTNESS 128
+#define DEFAULT_BRIGHTNESS 51  // ~20% para setups sin badge
 #define MAX_BRIGHTNESS 255
 
 // Configuración de imágenes
@@ -160,8 +160,7 @@ enum EffectType {
   EFFECT_RAINBOW,
   EFFECT_SOLID_COLOR,
   EFFECT_COLOR_CHASE,
-  EFFECT_FADE,
-  EFFECT_ACCEL_DIRECTION
+  EFFECT_FADE
 };
 
 // Funciones de configuración global (definidas en main.cpp)

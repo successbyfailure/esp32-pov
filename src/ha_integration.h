@@ -3,7 +3,11 @@
 
 #include <Arduino.h>
 #include <PubSubClient.h>
-#include <WiFi.h>
+#if defined(ESP8266) || defined(ARDUINO_ARCH_ESP8266)
+  #include <ESP8266WiFi.h>
+#else
+  #include <WiFi.h>
+#endif
 #include <ArduinoJson.h>
 #include "config.h"
 

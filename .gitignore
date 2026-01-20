@@ -66,6 +66,3 @@ docs/_build/
 # Test coverage
 coverage/
 htmlcov/
-
-# Claude
-.claude/

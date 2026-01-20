@@ -4,7 +4,7 @@
 #include <Arduino.h>
 #include "config.h"
 
-#ifdef BUTTON_PIN
+#if defined(BUTTON_PIN) || defined(UP_BUTTON_PIN) || defined(DOWN_BUTTON_PIN)
 
 class Button {
 private:
@@ -42,6 +42,15 @@ private:
 
 extern Button button;
 
-#endif // BUTTON_PIN
+// Botones adicionales opcionales
+#ifdef UP_BUTTON_PIN
+extern Button buttonUp;
+#endif
+
+#ifdef DOWN_BUTTON_PIN
+extern Button buttonDown;
+#endif
+
+#endif // any button pin
 
 #endif

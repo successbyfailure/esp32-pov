@@ -17,7 +17,11 @@ static String normalizeFilename(const char* name) {
 }
 
 bool ImageManager::init() {
+#if defined(ESP8266) || defined(ARDUINO_ARCH_ESP8266)
+  if (!LittleFS.begin()) {
+#else
   if (!LittleFS.begin(true)) {
+#endif
     Serial.println("Error: No se pudo inicializar LittleFS");
     return false;
   }
@@ -74,15 +78,45 @@ bool ImageManager::getImageInfo(const char* filename, ImageInfo& info) {
 }
 
 size_t ImageManager::getFreeSpace() {
-  return LittleFS.totalBytes() - LittleFS.usedBytes();
+  size_t total = 0;
+  size_t used = 0;
+#if defined(ESP8266) || defined(ARDUINO_ARCH_ESP8266)
+  FSInfo info;
+  if (LittleFS.info(info)) {
+    total = info.totalBytes;
+    used = info.usedBytes;
+  }
+#else
+  total = LittleFS.totalBytes();
+  used = LittleFS.usedBytes();
+#endif
+  return (total > used) ? (total - used) : 0;
 }
 
 size_t ImageManager::getTotalSpace() {
-  return LittleFS.totalBytes();
+  size_t total = 0;
+#if defined(ESP8266) || defined(ARDUINO_ARCH_ESP8266)
+  FSInfo info;
+  if (LittleFS.info(info)) {
+    total = info.totalBytes;
+  }
+#else
+  total = LittleFS.totalBytes();
+#endif
+  return total;
 }
 
 size_t ImageManager::getUsedSpace() {
-  return LittleFS.usedBytes();
+  size_t used = 0;
+#if defined(ESP8266) || defined(ARDUINO_ARCH_ESP8266)
+  FSInfo info;
+  if (LittleFS.info(info)) {
+    used = info.usedBytes;
+  }
+#else
+  used = LittleFS.usedBytes();
+#endif
+  return used;
 }
 
 bool ImageManager::imageExists(const char* filename) {
@@ -98,6 +132,25 @@ void ImageManager::refreshList() {
 void ImageManager::loadImageList() {
   imageList.clear();
 
+#if defined(ESP8266) || defined(ARDUINO_ARCH_ESP8266)
+  Dir dir = LittleFS.openDir(IMAGES_DIR);
+  bool ok = true;
+  while (dir.next()) {
+    String name = dir.fileName();
+    if (isImageFile(name.c_str())) {
+      ImageInfo info;
+      String cleanName = normalizeFilename(name.c_str());
+      String fullPath = String(IMAGES_DIR) + "/" + cleanName;
+      if (imageParser.parseImageInfo(fullPath.c_str(), info)) {
+        imageList.push_back(info);
+      }
+    }
+  }
+  listLoaded = ok;
+  if (!ok) {
+    Serial.println("Error: No se pudo leer directorio de imágenes");
+  }
+#else
   File root = LittleFS.open(IMAGES_DIR);
   if (!root || !root.isDirectory()) {
     Serial.println("Error: No se pudo abrir directorio de imágenes");
@@ -121,6 +174,7 @@ void ImageManager::loadImageList() {
 
   listLoaded = true;
   Serial.printf("Imágenes cargadas: %d\n", imageList.size());
+#endif
 }
 
 bool ImageManager::isImageFile(const char* filename) {
